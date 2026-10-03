@@ -98,6 +98,8 @@ button:active{transform:translateY(3px)}
  <label class="hint"><input type="checkbox" id="btnopt"> Show ✓ / ✗ buttons (auto-on if no tilt sensor)</label>
  <h2>Pick a category</h2>
  <div class="grid" id="cats"></div>
+ <button class="alt" onclick="resetUsed()">↺ Reset used words</button>
+ <p class="hint" id="pmsg"></p>
 </section>
 
 <section class="scr" id="ready" style="justify-content:center">
@@ -114,9 +116,10 @@ button:active{transform:translateY(3px)}
  <h1 style="font-size:clamp(30px,9vw,52px)">Time's up!</h1>
  <div id="final" style="font-size:64px;font-weight:900"></div>
  <div id="rate" style="font-size:24px;font-weight:700"></div>
+ <p class="hint" id="note"></p>
  <div class="list"><b>✓ Correct</b><div id="rok"></div></div>
  <div class="list"><b>✗ Passed</b><div id="rno"></div></div>
- <div class="row"><button class="big" onclick="begin(G.name)">↻ Again</button><button class="alt big" onclick="show('pick')">Categories</button></div>
+ <div class="row"><button class="big" onclick="begin(G.name)">↻ Again</button><button class="alt big" onclick="show('pick')">Categories</button><button class="alt big" id="rst" style="display:none" onclick="resetUsed()">↺ Reset words</button></div>
 </section>
 
 <section class="scr" id="words">
@@ -136,16 +139,16 @@ button:active{transform:translateY(3px)}
 
 <script>
 const BASE={
-"Animals":"Dog,Cat,Elephant,Lion,Tiger,Monkey,Giraffe,Penguin,Kangaroo,Dolphin,Shark,Eagle,Snake,Frog,Horse,Cow,Pig,Sheep,Rabbit,Bear,Zebra,Crocodile,Owl,Butterfly,Spider,Octopus,Parrot",
-"Food & Drinks":"Pizza,Burger,Ice Cream,Chocolate,Pasta,Rice,Sandwich,Popcorn,French Fries,Pancake,Cake,Banana,Apple,Mango,Watermelon,Orange Juice,Coffee,Tea,Milkshake,Cheese,Egg,Noodles,Soup,Donut,Cookie,Samosa,Salad",
-"Jobs":"Doctor,Teacher,Chef,Pilot,Firefighter,Police Officer,Farmer,Dentist,Nurse,Singer,Dancer,Painter,Driver,Builder,Barber,Astronaut,Scientist,Lawyer,Clown,Magician,Photographer,Waiter,Plumber,Electrician,Soldier,Actor,Engineer",
-"Sports & Games":"Football,Cricket,Basketball,Tennis,Swimming,Boxing,Golf,Volleyball,Badminton,Chess,Cycling,Running,Skiing,Surfing,Archery,Yoga,Karate,Skateboarding,Baseball,Hockey,Table Tennis,Bowling,Wrestling,Hide and Seek,Tag,Musical Chairs,Tug of War",
-"Countries & Cities":"India,USA,China,Japan,Brazil,Australia,Egypt,France,Italy,Canada,Mexico,Russia,Germany,Spain,Kenya,London,Paris,New York,Dubai,Tokyo,Sydney,Mumbai,Delhi,Bengaluru,Singapore,Rome,Bangkok",
-"Things at Home":"Bed,Sofa,Television,Fridge,Fan,Mirror,Clock,Pillow,Blanket,Toothbrush,Spoon,Plate,Cup,Door,Window,Lamp,Broom,Bucket,Towel,Soap,Umbrella,Key,Remote Control,Washing Machine,Microwave,Stairs,Candle",
-"Act It Out":"Dancing,Sleeping,Swimming,Cooking,Laughing,Crying,Jumping,Running,Singing,Brushing Teeth,Driving,Climbing,Eating,Drinking,Reading,Writing,Sneezing,Yawning,Whistling,Clapping,Waving,Kicking,Throwing,Painting,Fishing,Hugging,Skipping",
-"Nature & Places":"Mountain,River,Beach,Forest,Desert,Island,Volcano,Waterfall,Rainbow,Moon,Sun,Star,Cloud,Rain,Snow,Lightning,Ocean,Cave,Garden,Farm,Zoo,School,Hospital,Airport,Temple,Library,Stadium",
-"Clothes & Accessories":"Shirt,Jeans,Dress,Shoes,Socks,Hat,Cap,Scarf,Gloves,Jacket,Sweater,Watch,Sunglasses,Belt,Tie,Saree,Backpack,Wallet,Ring,Necklace,Earrings,Slippers,Raincoat,Uniform,Pajamas,Shorts,Helmet",
-"Transport":"Car,Bus,Train,Airplane,Helicopter,Bicycle,Motorcycle,Boat,Ship,Truck,Taxi,Auto Rickshaw,Metro,Ambulance,Fire Truck,Submarine,Rocket,Scooter,Tractor,Hot Air Balloon,Skateboard,Ferry,Jeep,Van,Parachute,Cable Car,Roller Skates"};
+"Animals":"Dog,Cat,Elephant,Lion,Tiger,Monkey,Giraffe,Penguin,Kangaroo,Dolphin,Shark,Eagle,Snake,Frog,Horse,Cow,Pig,Sheep,Rabbit,Bear,Zebra,Crocodile,Owl,Butterfly,Spider,Octopus,Parrot,Goat,Duck,Chicken,Camel,Deer,Fox,Wolf,Squirrel,Hippo,Rhino,Gorilla,Panda,Koala,Bat,Bee,Ant,Turtle,Whale,Crab,Lobster,Jellyfish,Seahorse,Starfish,Peacock,Flamingo,Swan,Pigeon,Crow,Rooster,Donkey,Mouse,Rat,Hamster,Lizard,Chameleon,Scorpion,Mosquito,Fly,Worm,Snail,Caterpillar,Dragonfly,Ladybug,Cobra,Alligator,Leopard,Cheetah,Hyena,Buffalo,Bull,Lamb,Puppy,Kitten,Seal,Walrus,Otter,Beaver,Hedgehog,Porcupine,Sloth,Armadillo,Ostrich,Toad,Eel,Goldfish,Salmon,Dinosaur,Mule,Bison,Moose,Bulldog,Pelican,Woodpecker",
+"Food & Drinks":"Pizza,Burger,Ice Cream,Chocolate,Pasta,Rice,Sandwich,Popcorn,French Fries,Pancake,Cake,Banana,Apple,Mango,Watermelon,Orange Juice,Coffee,Tea,Milkshake,Cheese,Egg,Noodles,Soup,Donut,Cookie,Samosa,Salad,Bread,Butter,Milk,Honey,Jam,Biscuit,Candy,Lollipop,Chips,Pickle,Sausage,Bacon,Hot Dog,Taco,Sushi,Curry,Dosa,Idli,Biryani,Naan,Chapati,Paratha,Paneer,Yogurt,Lassi,Gulab Jamun,Jalebi,Pani Puri,Vada Pav,Popsicle,Cupcake,Pie,Waffle,Cereal,Toast,Omelette,Steak,Fried Chicken,Fish,Shrimp,Grapes,Strawberry,Pineapple,Orange,Lemon,Coconut,Cherry,Peach,Pear,Papaya,Guava,Pomegranate,Kiwi,Carrot,Potato,Tomato,Onion,Garlic,Cucumber,Corn,Peas,Broccoli,Mushroom,Chili,Lemonade,Soda,Smoothie,Hot Chocolate,Water,Peanut Butter,Marshmallow,Pudding,Sweet Potato",
+"Jobs":"Doctor,Teacher,Chef,Pilot,Firefighter,Police Officer,Farmer,Dentist,Nurse,Singer,Dancer,Painter,Driver,Builder,Barber,Astronaut,Scientist,Lawyer,Clown,Magician,Photographer,Waiter,Plumber,Electrician,Soldier,Actor,Engineer,Carpenter,Mechanic,Tailor,Baker,Butcher,Fisherman,Sailor,Captain,Judge,Banker,Cashier,Accountant,Manager,Secretary,Programmer,Designer,Architect,Journalist,Reporter,Writer,Librarian,Postman,Gardener,Cleaner,Security Guard,Cowboy,Detective,Spy,Referee,Coach,Athlete,DJ,Musician,Guitarist,Drummer,Pianist,Model,Comedian,Director,Vet,Pharmacist,Surgeon,Paramedic,Lifeguard,Miner,Welder,Blacksmith,Potter,Jeweler,Florist,Bartender,Shopkeeper,Salesman,Receptionist,Tour Guide,Flight Attendant,Truck Driver,Professor,Principal,Student,King,Queen,Pirate,Ninja,Knight,Mayor,Politician,Priest,Monk,Babysitter,Mailman,Bodyguard,Surveyor",
+"Sports & Games":"Football,Cricket,Basketball,Tennis,Swimming,Boxing,Golf,Volleyball,Badminton,Chess,Cycling,Running,Skiing,Surfing,Archery,Yoga,Karate,Skateboarding,Baseball,Hockey,Table Tennis,Bowling,Wrestling,Hide and Seek,Tag,Musical Chairs,Tug of War,Rugby,Gymnastics,Weightlifting,Judo,Taekwondo,Fencing,Rowing,Sailing,Diving,Snowboarding,Ice Skating,Roller Skating,Kabaddi,Kho Kho,Carrom,Ludo,Snakes and Ladders,Monopoly,Scrabble,Uno,Poker,Dominoes,Jenga,Puzzle,Sudoku,Darts,Billiards,Snooker,Frisbee,Hopscotch,Skipping Rope,Marbles,Kite Flying,Cartwheel,Push-ups,Squats,Jogging,Hiking,Marathon,Sprint,Long Jump,High Jump,Javelin,Pole Vault,Relay Race,Penalty Kick,Slam Dunk,Home Run,Touchdown,Kickboxing,Sumo,Polo,Horse Riding,Bungee Jumping,Skydiving,Paragliding,Kayaking,Water Polo,Squash,Lacrosse,Cheerleading,Zumba,Aerobics,Pilates,Video Games,Arm Wrestling,Pillow Fight,Treasure Hunt,Simon Says,Dodgeball,Charades,Pogo Stick,Trampoline",
+"Countries & Cities":"India,USA,China,Japan,Brazil,Australia,Egypt,France,Italy,Canada,Mexico,Russia,Germany,Spain,Kenya,London,Paris,New York,Dubai,Tokyo,Sydney,Mumbai,Delhi,Bengaluru,Singapore,Rome,Bangkok,UK,Pakistan,Nepal,Bhutan,Sri Lanka,Bangladesh,Thailand,Vietnam,Indonesia,Malaysia,Philippines,South Korea,Saudi Arabia,Turkey,Iran,Iraq,Israel,Greece,Switzerland,Sweden,Norway,Finland,Denmark,Netherlands,Belgium,Portugal,Ireland,Scotland,Poland,Ukraine,Argentina,Chile,Peru,Colombia,Cuba,Jamaica,New Zealand,South Africa,Nigeria,Morocco,Ethiopia,Ghana,Antarctica,Hawaii,California,Texas,Las Vegas,Los Angeles,Chicago,Venice,Berlin,Amsterdam,Madrid,Barcelona,Moscow,Istanbul,Cairo,Hong Kong,Shanghai,Beijing,Seoul,Kolkata,Chennai,Hyderabad,Goa,Jaipur,Agra,Kerala,Kashmir,Mysuru,Pune,Toronto,Maldives",
+"Things at Home":"Bed,Sofa,Television,Fridge,Fan,Mirror,Clock,Pillow,Blanket,Toothbrush,Spoon,Plate,Cup,Door,Window,Lamp,Broom,Bucket,Towel,Soap,Umbrella,Key,Remote Control,Washing Machine,Microwave,Stairs,Candle,Table,Chair,Cupboard,Shelf,Carpet,Curtain,Fork,Knife,Bowl,Glass,Bottle,Kettle,Pan,Pot,Stove,Oven,Toaster,Mixer,Blender,Iron,Hanger,Laundry Basket,Bathtub,Shower,Toilet,Sink,Tap,Shampoo,Toothpaste,Comb,Hairdryer,Razor,Scissors,Needle,Thread,Hammer,Screwdriver,Ladder,Doorbell,Lock,Switch,Plug,Light Bulb,Battery,Charger,Laptop,Phone,Router,Speaker,Headphones,Camera,Calendar,Photo Frame,Vase,Trash Can,Mop,Vacuum Cleaner,Air Conditioner,Heater,Mattress,Alarm Clock,Wardrobe,Drawer,Balcony,Chimney,Roof,Floor,Wall,Garage,Mailbox,Fireplace,Bookshelf,Diary",
+"Act It Out":"Dancing,Sleeping,Swimming,Cooking,Laughing,Crying,Jumping,Running,Singing,Brushing Teeth,Driving,Climbing,Eating,Drinking,Reading,Writing,Sneezing,Yawning,Whistling,Clapping,Waving,Kicking,Throwing,Painting,Fishing,Hugging,Skipping,Walking,Crawling,Sitting,Standing,Kneeling,Bowing,Winking,Blinking,Smiling,Frowning,Shouting,Whispering,Coughing,Hiccuping,Snoring,Shivering,Sweating,Shaking Hands,Pointing,Nodding,Shrugging,Saluting,Praying,Meditating,Stretching,Typing,Texting,Taking a Selfie,Combing Hair,Washing Face,Taking a Shower,Mopping,Sweeping,Ironing,Folding Clothes,Knitting,Sewing,Gardening,Digging,Chopping,Stirring,Pouring,Blowing Candles,Blowing Bubbles,Opening a Gift,Playing Guitar,Playing Drums,Playing Piano,Throwing a Ball,Catching a Ball,Flying a Kite,Riding a Horse,Riding a Bike,Pulling a Rope,Lifting Weights,Doing Push-ups,Doing Yoga,Sneaking,Tiptoeing,Spinning,Rolling,Falling,Tripping,Sliding,Acting Like a Robot,Being a Statue,Flapping Wings,Roaring,Barking,Meowing,Snapping Fingers,Chewing Gum,Brushing Hair",
+"Nature & Places":"Mountain,River,Beach,Forest,Desert,Island,Volcano,Waterfall,Rainbow,Moon,Sun,Star,Cloud,Rain,Snow,Lightning,Ocean,Cave,Garden,Farm,Zoo,School,Hospital,Airport,Temple,Library,Stadium,Lake,Pond,Sea,Valley,Hill,Jungle,Meadow,Field,Cliff,Canyon,Glacier,Iceberg,Wind,Storm,Tornado,Earthquake,Fog,Thunder,Sunset,Sunrise,Planet,Earth,Galaxy,Comet,Tree,Flower,Rose,Sunflower,Grass,Leaf,Rock,Sand,Mud,Bridge,Park,Playground,Market,Mall,Cinema,Museum,Bank,Post Office,Police Station,Fire Station,Railway Station,Bus Stop,Church,Mosque,Palace,Castle,Fort,Tower,Lighthouse,Restaurant,Hotel,Bakery,Supermarket,Pharmacy,Gym,Swimming Pool,Circus,Theme Park,Campsite,Tent,Treehouse,Village,City,Office,Factory,Prison,Taj Mahal,Eiffel Tower,Pyramid",
+"Clothes & Accessories":"Shirt,Jeans,Dress,Shoes,Socks,Hat,Cap,Scarf,Gloves,Jacket,Sweater,Watch,Sunglasses,Belt,Tie,Saree,Backpack,Wallet,Ring,Necklace,Earrings,Slippers,Raincoat,Uniform,Pajamas,Shorts,Helmet,T-shirt,Trousers,Skirt,Suit,Blazer,Coat,Hoodie,Vest,Kurta,Dhoti,Lehenga,Sherwani,Turban,Dupatta,Shawl,Sandals,Boots,Sneakers,High Heels,Flip Flops,Bracelet,Bangles,Anklet,Pendant,Brooch,Crown,Mask,Bandana,Headband,Hairclip,Ribbon,Bow Tie,Underwear,Swimsuit,Bikini,Apron,Lab Coat,Overalls,Jumpsuit,Nightgown,Robe,Cape,Costume,Wig,Purse,Handbag,Suitcase,Glasses,Contact Lenses,Lipstick,Perfume,Nail Polish,Makeup,Bindi,Mehndi,Earmuffs,Mittens,Leggings,Tights,Poncho,Kimono,Tuxedo,Gown,Veil,Shoelaces,Buttons,Zipper,Pocket,Collar,Sleeve,Tank Top,Sweatpants,Beanie",
+"Transport":"Car,Bus,Train,Airplane,Helicopter,Bicycle,Motorcycle,Boat,Ship,Truck,Taxi,Auto Rickshaw,Metro,Ambulance,Fire Truck,Submarine,Rocket,Scooter,Tractor,Hot Air Balloon,Skateboard,Ferry,Jeep,Van,Parachute,Cable Car,Roller Skates,Tram,Monorail,Bullet Train,Steam Engine,Cargo Ship,Cruise Ship,Speedboat,Canoe,Kayak,Raft,Yacht,Jet Ski,Sailboat,Gondola,Jet,Glider,Drone,Space Shuttle,Spaceship,UFO,Hovercraft,Bulldozer,Crane,Excavator,Dump Truck,Tanker,Garbage Truck,School Bus,Police Car,Race Car,Limousine,Sports Car,Rickshaw,Horse Cart,Bullock Cart,Sled,Snowmobile,Segway,Unicycle,Tricycle,Wheelchair,Stroller,Go-kart,Bumper Car,Ferris Wheel,Roller Coaster,Escalator,Elevator,Zipline,Wheelbarrow,Trolley,Hoverboard,Pickup Truck,Camper Van,Caravan,Minibus,Double-decker Bus,Jetpack,Lifeboat,Tugboat,Fishing Boat,Icebreaker,Satellite,Moped,Dirt Bike,Quad Bike,Bike Taxi,Mini Truck,Cab,Tandem Bicycle,Paddle Boat,Sleigh,Rover"};
 for(const k in BASE)BASE[k]=BASE[k].split(",");
 
 const $=id=>document.getElementById(id);
@@ -153,12 +156,16 @@ const EM={'Animals':'🐘','Food & Drinks':'🍕','Jobs':'👩‍🚒','Sports &
 const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let U=ld('hu_user',{Custom:[]}), S=Object.assign({t:60,btn:false},ld('hu_set',{}));
+const sld=k=>{try{return JSON.parse(sessionStorage.getItem(k))||{}}catch(e){return {}}};
+const ssv=(k,v)=>{try{sessionStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let USED=sld('hu_used');
+const left=k=>(all()[k]||[]).filter(w=>!(USED[k]||[]).includes(w));
 let G=null, sensorOK=false, audio=null;
 const all=()=>Object.assign({},BASE,U);
 
 function show(id){
  document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===id));
- if(id==='pick')renderPick();
+ if(id==='pick'){renderPick();$('pmsg').textContent='Words you already played this session are skipped.'}
  if(id==='words'){$('cw').value=(U.Custom||[]).join('\n');$('xbox').style.display='none';$('msg').textContent=''}
 }
 function renderPick(){
@@ -171,7 +178,7 @@ function renderPick(){
  $('btnopt').checked=S.btn;$('btnopt').onchange=e=>{S.btn=e.target.checked;sv('hu_set',S)};
  const g=$('cats');g.innerHTML='';
  const c=all();
- let n=0;for(const k in c){const b=document.createElement('button');b.innerHTML='<span class="em">'+(EM[k]||'🎲')+'</span>'+k+'<small>'+c[k].length+' words</small>';b.style.setProperty('--i',n);b.style.setProperty('--h',(n*34+8)%360);n++;b.onclick=()=>begin(k);g.appendChild(b)}
+ let n=0;for(const k in c){const b=document.createElement('button');b.innerHTML='<span class="em">'+(EM[k]||'🎲')+'</span>'+k+'<small>'+left(k).length+' of '+c[k].length+' left</small>';b.style.setProperty('--i',n);b.style.setProperty('--h',(n*34+8)%360);n++;b.onclick=()=>begin(k);g.appendChild(b)}
 }
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 
@@ -187,12 +194,13 @@ async function askSensor(){
 async function begin(name){
  const w=all()[name]||[];
  if(!w.length){alert('Add some words first!');show('words');return}
+ if(!left(name).length){if(!confirm('You have played every word in '+name+'. Reset all words and play?'))return;USED={};ssv('hu_used',USED)}
  goFull();
  sensorOK=await askSensor();            // must stay first: iOS needs the tap gesture
  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
  try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}
  try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>G&&(G.wl=l)).catch(()=>{})}catch(e){}
- G={name,deck:shuffle(w),i:0,ok:[],no:[],armed:false,state:'ready',end:0,seen:false};
+ G={name,deck:shuffle(left(name)),i:0,ok:[],no:[],armed:false,state:'ready',end:0,seen:false};
  show('ready');
  let n=3;cdShow(n);
  const iv=setInterval(()=>{n--;if(n>0){cdShow(n);beep(500)}else{clearInterval(iv);play()}},1000);
@@ -210,7 +218,7 @@ function tick(){
  if(left<=0)finish();
 }
 function nextWord(){
- if(G.i>=G.deck.length){G.deck=shuffle(all()[G.name]);G.i=0}
+ if(G.i>=G.deck.length){finish(true);return}
  $('word').textContent=G.deck[G.i];anim($('word'),'wi');G.lock=false;
 }
 function onTilt(e){
@@ -223,7 +231,7 @@ function onTilt(e){
 function mark(ok){
  if(!G||G.state!=='play'||G.lock)return;
  G.lock=true;G.armed=false;
- (ok?G.ok:G.no).push(G.deck[G.i]);G.i++;
+ const cw=G.deck[G.i];(ok?G.ok:G.no).push(cw);(USED[G.name]=USED[G.name]||[]).push(cw);ssv('hu_used',USED);G.i++;
  $('sc').textContent=G.ok.length+' ✓';
  $('word').textContent=ok?'✓ Correct!':'Pass';anim($('word'),ok?'pop':'shake');if(ok)burst(18);
  document.body.className=ok?'ok':'no';
@@ -232,11 +240,13 @@ function mark(ok){
  setTimeout(()=>{document.body.className='';if(G&&G.state==='play')nextWord()},550);
 }
 function beep(f){try{if(!audio)return;const o=audio.createOscillator(),g=audio.createGain();o.frequency.value=f;g.gain.value=.12;o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+.12)}catch(e){}}
-function finish(){
+function finish(empty){
+ if(G.state==='done')return;
  G.state='done';clearInterval(G.timer);window.removeEventListener('deviceorientation',onTilt);
  try{G.wl&&G.wl.release()}catch(e){}
  try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}
  document.body.className='';beep(400);$('bar').style.display='none';$('tm').classList.remove('warn');
+ const rem=left(G.name).length;$('note').textContent=(empty||!rem)?'🎉 You played every word in '+G.name+'!':'';$('rst').style.display=rem?'none':'inline-block';
  const k=G.ok.length;countUp($('final'),k);$('rate').textContent=k>=12?'🏆 Legend!':k>=7?'🔥 Great round!':k>=3?'👍 Nice one!':'😅 Warm-up round!';if(k)setTimeout(()=>burst(45),300);
  const fill=(el,a)=>{el.innerHTML=a.length?a.map(w=>'<span></span>').join(''):'—';[...el.children].forEach((s,i)=>{s.textContent=a[i];s.style.setProperty('--i',Math.min(i,16))})};
  fill($('rok'),G.ok);fill($('rno'),G.no);show('result');
@@ -246,6 +256,8 @@ const cdShow=n=>{$('cd').innerHTML='<b class="pop">'+n+'</b>'};
 function anim(el,c){el.classList.remove('wi','pop','shake');void el.offsetWidth;el.classList.add(c)}
 function burst(n){for(let i=0;i<n;i++){const e=document.createElement('i');e.className='cf';const a=Math.random()*6.283,d=25+Math.random()*45;e.style.cssText='--dx:'+Math.cos(a)*d+'vmin;--dy:'+Math.sin(a)*d+'vmin;--r:'+(Math.random()*720-360)+'deg;background:hsl('+(Math.random()*360|0)+' 90% 60%);animation-duration:'+(.8+Math.random()*.6)+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),1500)}}
 function countUp(el,n){let i=0;el.textContent='0 ✓';if(!n)return;const t=setInterval(()=>{el.textContent=(++i)+' ✓';if(i>=n)clearInterval(t)},Math.min(120,700/n))}
+function resetUsed(){USED={};ssv('hu_used',USED);renderPick();$('pmsg').textContent='✓ All words are available again';$('note').textContent='✓ Words reset — tap Again!';$('rst').style.display='none'}
+fetch('words.json',{cache:'no-cache'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>{const c=j.categories||j,n={};for(const k in c)if(Array.isArray(c[k])&&c[k].length)n[k]=c[k].map(String);if(Object.keys(n).length){for(const k in BASE)delete BASE[k];Object.assign(BASE,n);if($('pick').classList.contains('on'))renderPick()}}).catch(()=>{});
 /* custom words, import / export */
 const clean=t=>[...new Set(t.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean))];
 function saveCustom(){U.Custom=clean($('cw').value);sv('hu_user',U);$('msg').textContent='Saved '+U.Custom.length+' words ✓'}
