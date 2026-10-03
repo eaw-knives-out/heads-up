@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#FFE066">
 <title>Heads Up!</title>
 <style>
 :root{--bg:#FFE066;--bg2:#FF8FAB;--ink:#1b1b3a;--card:#fff;--pri:#6C5CE7;--ok:#00B894;--no:#FF5E57;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -26,8 +27,8 @@ input[type=number]{font:inherit;width:90px;padding:10px;border-radius:12px;borde
 textarea{width:100%;min-height:200px;font:inherit;padding:12px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink)}
 .back{align-self:flex-start;padding:8px 14px;font-size:15px}
 #cd{font-size:30vmin;font-weight:900}
-#play{justify-content:space-between;max-width:none;width:100%}
-#word{font-size:clamp(40px,14vmin,120px);font-weight:900;line-height:1.05;word-break:break-word}
+#play{min-height:100dvh;justify-content:space-between;max-width:none;width:100%}
+#word{flex:1;display:flex;align-items:center;justify-content:center;width:100%;text-align:center;font-size:clamp(40px,14vmin,120px);font-weight:900;line-height:1.05;word-break:break-word}
 .hud{display:flex;justify-content:space-between;width:100%;font-size:26px;font-weight:800}
 #pbtns{display:none;gap:16px;width:100%;justify-content:center}
 #pbtns button{flex:1;max-width:260px;font-size:24px}
@@ -41,6 +42,8 @@ textarea{width:100%;min-height:200px;font:inherit;padding:12px;border-radius:14p
  <p>Hold the phone on your forehead.<br>Tilt <b>down</b> if you got it, <b>up</b> to pass.</p>
  <button class="big" onclick="show('pick')">▶ Play</button>
  <button class="alt" onclick="show('words')">✏️ My Words</button>
+ <button class="alt" onclick="goFull()">⛶ Full screen</button>
+ <p class="hint">iPhone: tap Share → Add to Home Screen for true full screen.</p>
 </section>
 
 <section class="scr" id="pick">
@@ -125,6 +128,7 @@ function renderPick(){
 }
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 
+function goFull(){try{const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen({navigationUI:'hide'}).catch(()=>{})}catch(e){}}
 async function askSensor(){
  try{
   if(typeof DeviceOrientationEvent==='undefined')return false;
@@ -136,6 +140,7 @@ async function askSensor(){
 async function begin(name){
  const w=all()[name]||[];
  if(!w.length){alert('Add some words first!');show('words');return}
+ goFull();
  sensorOK=await askSensor();            // must stay first: iOS needs the tap gesture
  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
  try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}
