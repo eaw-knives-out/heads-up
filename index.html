@@ -77,8 +77,12 @@ button:active{transform:translateY(3px)}
 @keyframes fl{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-18px) rotate(8deg)}}
 @keyframes beat{50%{transform:scale(1.25)}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+#ring{display:none;position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:5}
+#rp{stroke:#fff;stroke-width:10;stroke-linecap:round;filter:drop-shadow(0 0 5px rgba(0,0,0,.35));transition:stroke-dashoffset .25s linear,stroke .3s}
+#ring.low #rp{stroke:var(--no);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.45}}
 </style></head><body>
-<div id="bar"><i></i></div>
+<svg id="ring" aria-hidden="true"><path id="rp" fill="none"/></svg>
 
 <section class="scr on" id="home">
  <div class="deco"><span style="left:8%;top:14%">🎉</span><span style="right:10%;top:10%;animation-delay:-1s">⭐</span><span style="left:12%;bottom:14%;animation-delay:-2s">🎈</span><span style="right:8%;bottom:18%;animation-delay:-3s">🥳</span><span style="left:46%;bottom:6%;animation-delay:-4s">✨</span></div>
@@ -95,6 +99,7 @@ button:active{transform:translateY(3px)}
  <button class="back alt" onclick="show('home')">← Back</button>
  <h2>Pick time</h2>
  <div class="row" id="times"></div>
+ <label class="hint"><input type="checkbox" id="recopt"> 🎥 Record the audience (video + sound) with the selfie camera &amp; replay after the round (stays on your device)</label>
  <label class="hint"><input type="checkbox" id="btnopt"> Show ✓ / ✗ buttons (auto-on if no tilt sensor)</label>
  <h2>Pick a category</h2>
  <div class="grid" id="cats"></div>
@@ -107,7 +112,7 @@ button:active{transform:translateY(3px)}
 </section>
 
 <section class="scr" id="play">
- <div class="hud"><span id="tm">60</span><span id="sc">0 ✓</span></div>
+ <div class="hud"><span id="tm">60</span><span id="rec" style="display:none;color:var(--no);font-size:18px;animation:beat 1.2s infinite">● REC</span><span id="sc">0 ✓</span></div>
  <div id="word"></div>
  <div id="pbtns"><button style="background:var(--no)" onclick="mark(0)">✗ Pass</button><button style="background:var(--ok)" onclick="mark(1)">✓ Got it</button></div>
 </section>
@@ -117,6 +122,9 @@ button:active{transform:translateY(3px)}
  <div id="final" style="font-size:64px;font-weight:900"></div>
  <div id="rate" style="font-size:24px;font-weight:700"></div>
  <p class="hint" id="note"></p>
+ <div class="list" id="rv" style="display:none"><b>🎬 Audience replay</b><p class="hint" id="vmsg"></p>
+  <video id="vid" playsinline controls style="display:none;width:100%;border-radius:12px;margin-top:6px"></video>
+  <div class="row" id="vbtn" style="display:none;margin-top:10px"><button class="alt" onclick="saveVid()">⬇ Save</button><button class="alt" onclick="dropVid()">🗑 Discard</button></div></div>
  <div class="list"><b>✓ Correct</b><div id="rok"></div></div>
  <div class="list"><b>✗ Passed</b><div id="rno"></div></div>
  <div class="row"><button class="big" onclick="begin(G.name)">↻ Again</button><button class="alt big" onclick="show('pick')">Categories</button><button class="alt big" id="rst" style="display:none" onclick="resetUsed()">↺ Reset words</button></div>
@@ -155,7 +163,7 @@ const $=id=>document.getElementById(id);
 const EM={'Animals':'🐘','Food & Drinks':'🍕','Jobs':'👩‍🚒','Sports & Games':'⚽','Countries & Cities':'🌍','Things at Home':'🛋️','Act It Out':'🎭','Nature & Places':'🏔️','Clothes & Accessories':'👕','Transport':'🚗','Custom':'✨'};
 const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-let U=ld('hu_user',{Custom:[]}), S=Object.assign({t:60,btn:false},ld('hu_set',{}));
+let U=ld('hu_user',{Custom:[]}), S=Object.assign({t:60,btn:false,rec:false},ld('hu_set',{}));
 const sld=k=>{try{return JSON.parse(sessionStorage.getItem(k))||{}}catch(e){return {}}};
 const ssv=(k,v)=>{try{sessionStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let USED=sld('hu_used');
@@ -175,6 +183,7 @@ function renderPick(){
  const i=document.createElement('input');i.type='number';i.min=10;i.max=600;i.placeholder='custom s';if(!std)i.value=S.t;
  i.onchange=()=>{const v=Math.max(10,Math.min(600,+i.value||60));S.t=v;sv('hu_set',S);renderPick()};
  t.appendChild(i);
+ $('recopt').checked=S.rec;$('recopt').onchange=e=>{S.rec=e.target.checked;sv('hu_set',S);if(S.rec)getCam().then(m=>{if(m)m.getTracks().forEach(t=>t.stop());else{S.rec=false;sv('hu_set',S);$('recopt').checked=false;$('pmsg').textContent='Camera access was blocked or unavailable, so recording is off.'}})};
  $('btnopt').checked=S.btn;$('btnopt').onchange=e=>{S.btn=e.target.checked;sv('hu_set',S)};
  const g=$('cats');g.innerHTML='';
  const c=all();
@@ -200,21 +209,23 @@ async function begin(name){
  try{audio=audio||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}
  try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}
  try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>G&&(G.wl=l)).catch(()=>{})}catch(e){}
- G={name,deck:shuffle(left(name)),i:0,ok:[],no:[],armed:false,state:'ready',end:0,seen:false};
+ const cam=S.rec?await getCam():null;
+ dropVid();
+ G={name,cam,camFail:S.rec&&!cam,deck:shuffle(left(name)),i:0,ok:[],no:[],armed:false,state:'ready',end:0,seen:false};
  show('ready');
  let n=3;cdShow(n);
  const iv=setInterval(()=>{n--;if(n>0){cdShow(n);beep(500)}else{clearInterval(iv);play()}},1000);
  if(sensorOK)window.addEventListener('deviceorientation',onTilt);
 }
 function play(){
- G.state='play';G.end=Date.now()+S.t*1000;show('play');beep(800);nextWord();$('bar').style.display='block';$('bar').className='';
+ startRec();G.state='play';G.end=Date.now()+S.t*1000;show('play');beep(800);nextWord();$('ring').style.display='block';$('ring').classList.remove('low');layoutRing();ringSet(1);
  $('pbtns').style.display=(S.btn||!sensorOK)?'flex':'none';
  G.timer=setInterval(tick,200);tick();
  setTimeout(()=>{if(G&&G.state==='play'&&!G.seen){$('pbtns').style.display='flex'}},2000); // no sensor data → buttons
 }
 function tick(){
  const left=Math.max(0,Math.ceil((G.end-Date.now())/1000));
- $('tm').textContent='⏱ '+left;$('tm').classList.toggle('warn',left<=10);$('bar').className=left<=10?'low':'';$('bar').firstElementChild.style.transform='scaleX('+Math.max(0,(G.end-Date.now())/(S.t*1000))+')';
+ $('tm').textContent='⏱ '+left;$('tm').classList.toggle('warn',left<=10);$('ring').classList.toggle('low',left<=10);ringSet((G.end-Date.now())/(S.t*1000));
  if(left<=0)finish();
 }
 function nextWord(){
@@ -245,7 +256,9 @@ function finish(empty){
  G.state='done';clearInterval(G.timer);window.removeEventListener('deviceorientation',onTilt);
  try{G.wl&&G.wl.release()}catch(e){}
  try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}
- document.body.className='';beep(400);$('bar').style.display='none';$('tm').classList.remove('warn');
+ document.body.className='';beep(400);$('rec').style.display='none';
+ if(G.mr&&G.mr.state!=='inactive'){$('rv').style.display='block';$('vmsg').textContent='Preparing replay…';$('vid').style.display='none';$('vbtn').style.display='none';G.mr.stop()}
+ else{if(G.cam)G.cam.getTracks().forEach(t=>t.stop());if(G.camFail){$('rv').style.display='block';$('vmsg').textContent='Camera unavailable or blocked, so this round was not recorded.';$('vid').style.display='none';$('vbtn').style.display='none'}else $('rv').style.display='none'}$('ring').style.display='none';$('tm').classList.remove('warn');
  const rem=left(G.name).length;$('note').textContent=(empty||!rem)?'🎉 You played every word in '+G.name+'!':'';$('rst').style.display=rem?'none':'inline-block';
  const k=G.ok.length;countUp($('final'),k);$('rate').textContent=k>=12?'🏆 Legend!':k>=7?'🔥 Great round!':k>=3?'👍 Nice one!':'😅 Warm-up round!';if(k)setTimeout(()=>burst(45),300);
  const fill=(el,a)=>{el.innerHTML=a.length?a.map(w=>'<span></span>').join(''):'—';[...el.children].forEach((s,i)=>{s.textContent=a[i];s.style.setProperty('--i',Math.min(i,16))})};
@@ -258,6 +271,49 @@ function burst(n){for(let i=0;i<n;i++){const e=document.createElement('i');e.cla
 function countUp(el,n){let i=0;el.textContent='0 ✓';if(!n)return;const t=setInterval(()=>{el.textContent=(++i)+' ✓';if(i>=n)clearInterval(t)},Math.min(120,700/n))}
 function resetUsed(){USED={};ssv('hu_used',USED);renderPick();$('pmsg').textContent='✓ All words are available again';$('note').textContent='✓ Words reset — tap Again!';$('rst').style.display='none'}
 fetch('words.json',{cache:'no-cache'}).then(r=>r.ok?r.json():Promise.reject()).then(j=>{const c=j.categories||j,n={};for(const k in c)if(Array.isArray(c[k])&&c[k].length)n[k]=c[k].map(String);if(Object.keys(n).length){for(const k in BASE)delete BASE[k];Object.assign(BASE,n);if($('pick').classList.contains('on'))renderPick()}}).catch(()=>{});
+/* border timer: starts at top-left, runs left -> bottom -> right -> top, ends at top-left */
+let RL=1;
+function layoutRing(){
+ const W=innerWidth,H=innerHeight,m=8,r=30;
+ const pr=document.createElement('div');
+ pr.style.cssText='position:fixed;visibility:hidden;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+ document.body.appendChild(pr);const c=getComputedStyle(pr);
+ const a=m+(parseFloat(c.paddingLeft)||0),b=m+(parseFloat(c.paddingTop)||0),x=W-m-(parseFloat(c.paddingRight)||0),y=H-m-(parseFloat(c.paddingBottom)||0);
+ pr.remove();
+ const q=Math.max(0,Math.min(r,(x-a)/2,(y-b)/2)),p=$('rp');
+ $('ring').setAttribute('viewBox','0 0 '+W+' '+H);
+ p.setAttribute('d','M'+a+' '+(b+q)+'L'+a+' '+(y-q)+'A'+q+' '+q+' 0 0 0 '+(a+q)+' '+y+'L'+(x-q)+' '+y+'A'+q+' '+q+' 0 0 0 '+x+' '+(y-q)+'L'+x+' '+(b+q)+'A'+q+' '+q+' 0 0 0 '+(x-q)+' '+b+'L'+(a+q)+' '+b+'A'+q+' '+q+' 0 0 0 '+a+' '+(b+q));
+ RL=p.getTotalLength();p.style.strokeDasharray=RL+' '+RL;
+}
+function ringSet(f){$('rp').style.strokeDashoffset=-RL*(1-Math.max(0,Math.min(1,f)))}
+addEventListener('resize',()=>{if($('ring').style.display==='block')layoutRing()});
+/* selfie-camera recording (kept in memory on this device, never uploaded) */
+let VID=null;
+async function getCam(){
+ try{
+  if(!navigator.mediaDevices||!window.MediaRecorder)return null;
+  const v={facingMode:'user',width:{ideal:1280},height:{ideal:720}};
+  try{return await navigator.mediaDevices.getUserMedia({video:v,audio:true})}
+  catch(e){if(e&&e.name==='NotAllowedError')return null;return await navigator.mediaDevices.getUserMedia({video:v})}
+ }catch(e){return null}
+}
+function startRec(){
+ if(!G.cam)return;const g=G;
+ try{
+  const t=['video/webm;codecs=vp9,opus','video/webm','video/mp4'].find(x=>MediaRecorder.isTypeSupported(x))||'';
+  g.chunks=[];const mr=new MediaRecorder(g.cam,t?{mimeType:t,videoBitsPerSecond:1500000}:{videoBitsPerSecond:1500000});
+  mr.ondataavailable=e=>{if(e.data&&e.data.size)g.chunks.push(e.data)};
+  mr.onstop=()=>{
+   g.cam.getTracks().forEach(x=>x.stop());
+   if(!g.chunks.length){$('vmsg').textContent='Recording failed.';return}
+   const mt=mr.mimeType||t||'video/webm';
+   VID={url:URL.createObjectURL(new Blob(g.chunks,{type:mt})),ext:mt.includes('mp4')?'mp4':'webm'};
+   const v=$('vid');v.src=VID.url;v.style.display='block';$('vbtn').style.display='flex';$('vmsg').textContent=(g.cam.getAudioTracks().length?'Video + sound. ':'No microphone access, so video only. ')+'Stays on your device only.'};
+  mr.start(1000);g.mr=mr;$('rec').style.display='inline-block';
+ }catch(e){g.cam.getTracks().forEach(x=>x.stop());g.cam=null;g.mr=null}
+}
+function dropVid(){if(VID){URL.revokeObjectURL(VID.url);VID=null}const v=$('vid');v.removeAttribute('src');v.load();$('rv').style.display='none'}
+function saveVid(){if(!VID)return;const a=document.createElement('a');a.href=VID.url;a.download='headsup-round.'+VID.ext;document.body.appendChild(a);a.click();a.remove()}
 /* custom words, import / export */
 const clean=t=>[...new Set(t.split(/[\n,]+/).map(s=>s.trim()).filter(Boolean))];
 function saveCustom(){U.Custom=clean($('cw').value);sv('hu_user',U);$('msg').textContent='Saved '+U.Custom.length+' words ✓'}
